@@ -1,0 +1,141 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  avatar    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  sessions Session[]
+  settings UserSettings?
+
+  @@map("users")
+}
+
+// User settings/preferences
+model UserSettings {
+  id                    String  @id @default(cuid())
+  userId                String  @unique
+  user                  User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Audio settings
+  defaultMicrophoneId   String?
+  noiseReduction        Boolean @default(false)
+  echoCancellation      Boolean @default(false)
+  
+  // Display settings
+  showConfidenceScores  Boolean @default(true)
+  darkMode              Boolean @default(true)
+  animationsEnabled     Boolean @default(true)
+  
+  // Notification settings
+  emailNotifications    Boolean @default(false)
+  sessionReminders      Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("user_settings")
+}
+
+// Recording session
+model Session {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  // Session metadata
+  name        String?
+  description String?
+  startTime   DateTime @default(now())
+  endTime     DateTime?
+  duration    Int?     // Duration in seconds
+  
+  // Aggregated emotion data
+  dominantEmotion String?
+  averageConfidence Float?
+  
+  // Summary of all emotions (stored as JSON)
+  emotionSummary Json?
+  
+  // Status
+  status      SessionStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  predictions EmotionPrediction[]
+  tags        SessionTag[]
+
+  @@index([userId])
+  @@index([startTime])
+  @@map("sessions")
+}
+
+// Individual emotion prediction
+model EmotionPrediction {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  
+  // Prediction data
+  timestamp     DateTime @default(now())
+  dominant      String   // Dominant emotion label
+  confidence    Float    // Confidence score 0-1
+  
+  // All emotion probabilities (stored as JSON)
+  // { angry: 0.1, calm: 0.2, disgust: 0.05, fearful: 0.1, happy: 0.3, neutral: 0.15, sad: 0.1 }
+  emotions      Json
+  
+  // Inference performance
+  inferenceTime Float?   // Time in ms
+
+  @@index([sessionId])
+  @@index([timestamp])
+  @@map("emotion_predictions")
+}
+
+// Tags for organizing sessions
+model Tag {
+  id       String @id @default(cuid())
+  name     String @unique
+  color    String @default("#6366f1")
+  
+  sessions SessionTag[]
+
+  @@map("tags")
+}
+
+// Many-to-many relation between sessions and tags
+model SessionTag {
+  sessionId String
+  session   Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  tagId     String
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, tagId])
+  @@map("session_tags")
+}
+
+// Enum for session status
+enum SessionStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
