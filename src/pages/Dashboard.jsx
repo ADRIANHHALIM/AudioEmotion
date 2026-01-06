@@ -1,3 +1,4 @@
+import FaceEmotionDetector from "../components/FaceEmotionDetector";
 import Waveform from "../components/Waveform";
 import EmotionDisplay from "../components/EmotionDisplay";
 import ControlPanel from "../components/ControlPanel";
@@ -60,6 +61,11 @@ export default function Dashboard() {
 
       {/* Main grid layout */}
       <div className="grid grid-cols-12 gap-6">
+        {/* Face Emotion Detection - Top Full Width */}
+        <div className="col-span-12">
+          <FaceEmotionDetector />
+        </div>
+
         {/* Left column - Waveform & Emotion Display */}
         <div className="col-span-12 lg:col-span-8 space-y-6">
           {/* Waveform visualizer (mic only) */}

@@ -43,6 +43,9 @@ export default defineConfig({
   // Don't pre-bundle onnxruntime-web - let it load dynamically
   optimizeDeps: {
     exclude: ["onnxruntime-web"],
+    esbuildOptions: {
+      target: "esnext",
+    },
   },
   build: {
     target: "esnext",
@@ -53,6 +56,8 @@ export default defineConfig({
         },
       },
     },
+    // Increase chunk size warning limit for ONNX
+    chunkSizeWarningLimit: 2000,
   },
   // Worker configuration - use ES modules
   worker: {
